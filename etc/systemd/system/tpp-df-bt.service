@@ -1,0 +1,12 @@
+[Unit]
+Description=TPP PS4 Controller Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/python3 -m tpp_df_bt_service
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -25,19 +25,24 @@ class MyController(Controller):
     def setup(self):
         """Loads configuration and initializes hardware."""
         print("Setting up controller and relays...")
-        self._load_keymap()
+        self._load_config()
         self._initialize_button_states()
         self._initialize_relays()
         print("Setup complete. Listening for controller input...")
 
-    def _load_keymap(self):
-        """Loads the keymap from keymap.json."""
+    def _load_config(self):
+        """Loads the configuration from config.json."""
         try:
-            with open("keymap.json", "r") as f:
+            with open("config.json", "r") as f:
                 config = json.load(f)
 
+            keymap = config.get("keymap", {})
+            if not keymap:
+                print("Error: 'keymap' not found or is empty in config.json.")
+                sys.exit(1)
+
             # Invert the map for easier lookup: relay -> [buttons]
-            for relay_key, buttons in config.items():
+            for relay_key, buttons in keymap.items():
                 try:
                     relay_num = int(relay_key.split('_')[1])
                     if not 1 <= relay_num <= 4:
@@ -46,16 +51,16 @@ class MyController(Controller):
                     self.relay_to_buttons[relay_num] = [b.lower() for b in buttons]
                 except (ValueError, IndexError):
                     print(f"Warning: Invalid relay key format '{relay_key}' in keymap. Skipping.")
-            
+
             if not self.relay_to_buttons:
-                print("Error: Keymap is empty or invalid. Please check keymap.json.")
+                print("Error: No valid relay mappings found in the keymap.")
                 sys.exit(1)
 
         except FileNotFoundError:
-            print("Error: keymap.json not found. Please create it.")
+            print("Error: config.json not found. Please create it.")
             sys.exit(1)
         except json.JSONDecodeError:
-            print("Error: keymap.json is not a valid JSON file.")
+            print("Error: config.json is not a valid JSON file.")
             sys.exit(1)
 
     def _initialize_button_states(self):

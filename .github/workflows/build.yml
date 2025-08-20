@@ -1,0 +1,30 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v3
+
+    - name: Build the .deb package
+      run: |
+        chmod +x build.sh
+        ./build.sh
+
+    - name: Upload .deb to release
+      if: github.event_name == 'release'
+      uses: actions/upload-release-asset@v1
+      with:
+        upload_url: ${{ github.event.release.upload_url }}
+        asset_path: ./tpp-df-bt-service-1.0.0.deb
+        asset_name: tpp-df-bt-service-1.0.0.deb
+        asset_content_type: application/vnd.debian.binary-package

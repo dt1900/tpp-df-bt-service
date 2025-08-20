@@ -2,3 +2,10 @@
 venv/
 *.pyc
 __pycache__/
+
+# Build artifacts
+*.deb
+*.egg-info/
+tpp-df-bt-service-*/
+build/
+dist/

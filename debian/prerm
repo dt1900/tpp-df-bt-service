@@ -1,0 +1,5 @@
+#!/bin/sh
+set -e
+echo "Stopping and disabling service..."
+systemctl stop tpp-df-bt.service
+systemctl disable tpp-df-bt.service
