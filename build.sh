@@ -52,6 +52,15 @@ echo "Copying service and config files..."
 cp "etc/systemd/system/tpp-df-bt.service" "${STAGING_DIR}/etc/systemd/system/"
 cp "config.json" "${STAGING_DIR}/etc/${PACKAGE_NAME}/"
 
+# Copy cron job and update script
+echo "Copying cron job and update script..."
+mkdir -p "${STAGING_DIR}/etc/cron.d"
+cp "debian/tpp-df-bt-service-update" "${STAGING_DIR}/etc/cron.d/"
+chmod 0644 "${STAGING_DIR}/etc/cron.d/tpp-df-bt-service-update"
+mkdir -p "${STAGING_DIR}/usr/local/bin"
+cp "update-tpp-df-bt-service.sh" "${STAGING_DIR}/usr/local/bin/"
+chmod +x "${STAGING_DIR}/usr/local/bin/update-tpp-df-bt-service.sh"
+
 # List staging directory contents
 echo "Listing staging directory contents..."
 ls -lR "${STAGING_DIR}"

@@ -11,6 +11,55 @@ import sys
 import time
 import lib4relay
 from pyPS4Controller.controller import Controller
+import http.server
+import socketserver
+import threading
+import importlib.metadata
+
+# --- Version Info ---
+try:
+    __version__ = importlib.metadata.version("tpp-df-bt-service")
+except importlib.metadata.PackageNotFoundError:
+    __version__ = "0.0.0-dev"
+
+# --- Global Controller Info ---
+controller = None
+
+# --- Web Server for Version Display ---
+class VersionHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
+    """A simple HTTP request handler to serve the version page."""
+    def do_GET(self):
+        if self.path == '/':
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
+            self.end_headers()
+            
+            controller_name = "Not found"
+            if controller and hasattr(controller, 'device_name'):
+                controller_name = controller.device_name
+
+            html = f"""
+            <html>
+            <head><title>TPP-DF-BT Service</title></head>
+            <body>
+            <h1>TPP-DF-BT Service</h1>
+            <p>Version: {__version__}</p>
+            <p>Controller: {controller_name}</p>
+            </body>
+            </html>
+            """
+            self.wfile.write(html.encode('utf-8'))
+        else:
+            self.send_error(404, "File Not Found")
+
+def start_web_server(port=8000):
+    """Starts the HTTP server in a new thread."""
+    handler = VersionHttpRequestHandler
+    httpd = socketserver.TCPServer(("", port), handler)
+    print(f"Serving version page at http://<your-pi-ip>:{port}")
+    thread = threading.Thread(target=httpd.serve_forever)
+    thread.daemon = True
+    thread.start()
 
 class MyController(Controller):
     """A custom controller class to handle PS4 events and map them to relays."""
@@ -138,6 +187,9 @@ class MyController(Controller):
 if __name__ == "__main__":
     print("Starting PS4 controller relay service...")
     
+    # Start the web server in a background thread
+    start_web_server()
+
     try:
         # You may need to change the interface if js0 is not correct.
         controller = MyController(interface="/dev/input/js0", connecting_using_ds4drv=False)

@@ -1,0 +1,4 @@
+# Cron job to automatically update the tpp-df-bt-service
+SHELL=/bin/sh
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+0 3 * * * root /usr/local/bin/update-tpp-df-bt-service.sh >> /var/log/tpp-df-bt-service-update.log 2>&1
