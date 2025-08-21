@@ -22,13 +22,14 @@ echo "Creating staging directory..."
 mkdir -p "${STAGING_DIR}/DEBIAN"
 mkdir -p "${STAGING_DIR}/etc/systemd/system"
 mkdir -p "${STAGING_DIR}/etc/${PACKAGE_NAME}"
-mkdir -p "${STAGING_DIR}/usr/lib/python3/dist-packages/${PACKAGE_NAME}"
+mkdir -p "${STAGING_DIR}/usr/lib/python3/dist-packages/tpp_df_bt_service"
 mkdir -p "${STAGING_DIR}/usr/lib/python3/dist-packages/lib4relay"
 
 
 # Copy application code
-echo "Copying application code..."
-cp -r "tpp_df_bt_service/"* "${STAGING_DIR}/usr/lib/python3/dist-packages/${PACKAGE_NAME}/"
+echo "Copying application code explicitly..."
+cp "tpp_df_bt_service/__init__.py" "${STAGING_DIR}/usr/lib/python3/dist-packages/tpp_df_bt_service/"
+cp "tpp_df_bt_service/__main__.py" "${STAGING_DIR}/usr/lib/python3/dist-packages/tpp_df_bt_service/"
 
 # Copy dependencies
 echo "Copying dependencies..."
@@ -51,6 +52,9 @@ echo "Copying service and config files..."
 cp "etc/systemd/system/tpp-df-bt.service" "${STAGING_DIR}/etc/systemd/system/"
 cp "config.json" "${STAGING_DIR}/etc/${PACKAGE_NAME}/"
 
+# List staging directory contents
+echo "Listing staging directory contents..."
+ls -lR "${STAGING_DIR}"
 
 # Build the package
 echo "Building .deb package..."
