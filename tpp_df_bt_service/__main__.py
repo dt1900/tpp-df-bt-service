@@ -11,7 +11,6 @@ import sys
 import json
 from .service import MyController
 from .web import start_web_server, cleanup_web_server
-import lib4relay
 
 def cleanup(signum, frame):
     print("\nCleaning up and exiting.")

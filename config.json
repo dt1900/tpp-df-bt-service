@@ -1,4 +1,5 @@
 {
+  "interface": "/dev/input/js0",
   "keymap": {
     "relay_1": [],
     "relay_2": ["L1", "L2"],
