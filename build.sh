@@ -30,7 +30,7 @@ cp -r "4relay/lib4relay/"* "${STAGING_DIR}/usr/lib/python3/dist-packages/lib4rel
 
 # Install python dependencies
 echo "Installing python dependencies..."
-pip install --system --target="${STAGING_DIR}/usr/lib/python3/dist-packages" -r requirements.txt
+pip install --target="${STAGING_DIR}/usr/lib/python3/dist-packages" -r requirements.txt
 
 
 # Copy packaging files
