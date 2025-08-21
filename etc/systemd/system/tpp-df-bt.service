@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/etc/tpp-df-bt-service
-ExecStart=/usr/bin/python3 /usr/lib/python3/dist-packages/tpp_df_bt_service/__main__.py
+ExecStart=/usr/bin/python3 -m tpp_df_bt_service
 Restart=on-failure
 
 [Install]
