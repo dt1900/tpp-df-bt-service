@@ -44,8 +44,14 @@ echo "New version available. Downloading and installing..."
 TMP_DEB=$(mktemp)
 wget -O "$TMP_DEB" "$DEB_URL"
 
+# Stop the service
+sudo systemctl stop tpp-df-bt.service
+
 # Install the new package
 sudo dpkg -i "$TMP_DEB"
+
+# Start the service
+sudo systemctl start tpp-df-bt.service
 
 # Clean up
 rm "$TMP_DEB"

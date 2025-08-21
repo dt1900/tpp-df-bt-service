@@ -15,6 +15,7 @@ import http.server
 import socketserver
 import threading
 import importlib.metadata
+import signal
 
 # --- Version Info ---
 try:
@@ -24,6 +25,7 @@ except importlib.metadata.PackageNotFoundError:
 
 # --- Global Controller Info ---
 controller = None
+httpd = None
 
 # --- Web Server for Version Display ---
 class VersionHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
@@ -54,12 +56,14 @@ class VersionHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
 
 def start_web_server(port=8000):
     """Starts the HTTP server in a new thread."""
+    global httpd
     handler = VersionHttpRequestHandler
     httpd = socketserver.TCPServer(("", port), handler)
     print(f"Serving version page at http://<your-pi-ip>:{port}")
     thread = threading.Thread(target=httpd.serve_forever)
     thread.daemon = True
     thread.start()
+    return httpd
 
 class MyController(Controller):
     """A custom controller class to handle PS4 events and map them to relays."""
@@ -184,11 +188,26 @@ class MyController(Controller):
     def on_R2_release(self): self._handle_button_event("r2", False)
 
 
+def cleanup(signum, frame):
+    print("\nCleaning up and exiting.")
+    if httpd:
+        httpd.shutdown()
+        httpd.server_close()
+    # Ensure all relays are turned off on exit
+    print("Turning all relays OFF.")
+    for i in range(1, 5):
+        lib4relay.set(0, i, 0)
+    sys.exit(0)
+
 if __name__ == "__main__":
+    # Register signal handlers for graceful shutdown
+    signal.signal(signal.SIGINT, cleanup)
+    signal.signal(signal.SIGTERM, cleanup)
+
     print("Starting PS4 controller relay service...")
     
     # Start the web server in a background thread
-    start_web_server()
+    httpd = start_web_server()
 
     try:
         # You may need to change the interface if js0 is not correct.
@@ -197,13 +216,8 @@ if __name__ == "__main__":
         # Start listening for events
         controller.listen()
             
-    except KeyboardInterrupt:
-        print("\nExiting.")
     except Exception as e:
         print(f"\nAn error occurred: {e}")
         print("Please ensure the controller is connected and the interface is correct.")
     finally:
-        # Ensure all relays are turned off on exit
-        print("Turning all relays OFF.")
-        for i in range(1, 5):
-            lib4relay.set(0, i, 0)
+        cleanup(None, None)
