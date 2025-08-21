@@ -4,19 +4,17 @@ import socketserver
 import threading
 import importlib.metadata
 
+import subprocess
+
 httpd = None
 __version__ = "0.0.0-dev"
 
 try:
-    __version__ = importlib.metadata.version("tpp-df-bt-service")
-except importlib.metadata.PackageNotFoundError:
-    try:
-        with open("/etc/tpp-df-bt-service/debian/control", "r") as f:
-            for line in f:
-                if line.startswith("Version:"):
-                    __version__ = line.split(":")[1].strip()
-    except FileNotFoundError:
-        pass
+    version_output = subprocess.check_output(["dpkg-query", "-W", "-f=${Version}", "tpp-df-bt-service"]).decode().strip()
+    if version_output:
+        __version__ = version_output
+except Exception:
+    pass
 
 class VersionHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
     """A simple HTTP request handler to serve the version page."""
