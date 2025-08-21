@@ -2,14 +2,20 @@
 
 set -e
 
+if [ -z "$1" ]; then
+  echo "Usage: $0 <version>"
+  exit 1
+fi
+
 PACKAGE_NAME="tpp-df-bt-service"
-VERSION="1.0.0"
+VERSION=$1
 STAGING_DIR="${PACKAGE_NAME}-${VERSION}"
+DEBIAN_REVISION=1
 
 # Clean up previous build
 echo "Cleaning up previous build..."
 rm -rf "${STAGING_DIR}"
-rm -f "${PACKAGE_NAME}_${VERSION}_*.deb"
+rm -f "${PACKAGE_NAME}_${VERSION}-*.deb"
 
 # Create staging directory structure
 echo "Creating staging directory..."
@@ -35,7 +41,7 @@ pip install --target="${STAGING_DIR}/usr/lib/python3/dist-packages" -r requireme
 
 # Copy packaging files
 echo "Copying packaging files..."
-cp "debian/control" "${STAGING_DIR}/DEBIAN/"
+sed "s/^Version: .*/Version: ${VERSION}-${DEBIAN_REVISION}/" "debian/control" > "${STAGING_DIR}/DEBIAN/control"
 cp "debian/postinst" "${STAGING_DIR}/DEBIAN/"
 cp "debian/prerm" "${STAGING_DIR}/DEBIAN/"
 chmod +x "${STAGING_DIR}/DEBIAN/postinst" "${STAGING_DIR}/DEBIAN/prerm"
@@ -50,5 +56,8 @@ cp "config.json" "${STAGING_DIR}/etc/${PACKAGE_NAME}/"
 echo "Building .deb package..."
 dpkg-deb --build "${STAGING_DIR}"
 
-echo "Build complete: ${STAGING_DIR}.deb"
+# Rename the package to include the version
+mv "${STAGING_DIR}.deb" "${PACKAGE_NAME}_${VERSION}-${DEBIAN_REVISION}_all.deb"
+
+echo "Build complete: ${PACKAGE_NAME}_${VERSION}-${DEBIAN_REVISION}_all.deb"
 

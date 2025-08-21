@@ -10,6 +10,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - name: Check out code
@@ -20,13 +22,13 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y python3-pip
         chmod +x build.sh
-        ./build.sh
+        ./build.sh ${{ github.ref_name }}
 
     - name: Upload .deb to release
       if: github.event_name == 'release'
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ github.event.release.upload_url }}
-        asset_path: ./tpp-df-bt-service-1.0.0.deb
-        asset_name: tpp-df-bt-service-1.0.0.deb
+        asset_path: ./tpp-df-bt-service_${{ github.ref_name }}-1_all.deb
+        asset_name: tpp-df-bt-service_${{ github.ref_name }}-1_all.deb
         asset_content_type: application/vnd.debian.binary-package
