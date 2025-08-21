@@ -9,6 +9,8 @@ Sequent Microsystems 4-Relay HAT based on a JSON keymap.
 import signal
 import sys
 import json
+import threading
+import time # Import time
 from .service import MyController
 from .web import start_web_server, cleanup_web_server
 
@@ -39,14 +41,29 @@ if __name__ == "__main__":
         controller = MyController(interface=interface, connecting_using_ds4drv=False)
         controller.setup(config)
         
+        # Start the controller listener in a separate thread
+        controller_thread = threading.Thread(target=controller.listen)
+        controller_thread.daemon = True
+        controller_thread.start()
+
+        # Give some time for the controller to connect and for the listener to start
+        time.sleep(10) # Increased sleep duration
+
+        # Update controller info using bluetoothctl directly
+        controller.update_controller_info()
+
         # Start the web server in a background thread
         start_web_server(controller, 8000)
 
-        # Start listening for events
-        controller.listen()
-            
+        # Keep the main thread alive
+        while True:
+            time.sleep(1) # Keep the main thread alive
+
     except Exception as e:
         print(f"\nAn error occurred: {e}")
         print("Please ensure the controller is connected and the interface is correct.")
     finally:
         cleanup(None, None)
+
+
+

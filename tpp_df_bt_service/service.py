@@ -29,22 +29,67 @@ class MyController(Controller):
         }
 
     def on_connect(self):
-        print("Controller connected")
+        print("Controller connected (pyPS4Controller callback)")
         self.is_connected = True
-        self.device_name = self.interface
-        # a regex to extract the mac address from the interface string
-        match = re.search(r"([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})", self.interface)
-        if match:
-            self.device_mac = match.group(0)
-            try:
-                # Get device name from bluetoothctl
-                output = subprocess.check_output(["bluetoothctl", "info", self.device_mac], text=True)
-                for line in output.splitlines():
-                    if "Name:" in line:
-                        self.device_name = line.split("Name:")[1].strip()
+
+    def update_controller_info(self):
+        js0_device_name = None
+        try:
+            with open("/proc/bus/input/devices", "r") as f:
+                content = f.read()
+            
+            # Split content into device blocks
+            device_blocks = content.strip().split("\n\n")
+
+            for block in device_blocks:
+                if "Handlers=js0" in block:
+                    name_match = re.search(r'N: Name="([^"]+)"', block)
+                    if name_match:
+                        js0_device_name = name_match.group(1)
                         break
-            except Exception as e:
-                print(f"Could not get device name: {e}")
+            
+            if not js0_device_name:
+                print("Could not find device name for /dev/input/js0 in /proc/bus/input/devices.")
+                self.device_name = None
+                self.device_mac = None
+                return
+
+            # Now use bluetoothctl to find the MAC address for this specific device name
+            output = subprocess.check_output(["bluetoothctl", "devices", "Connected"], text=True)
+            lines = output.strip().split('\n')
+            
+            found_mac = None
+            for line in lines:
+                match = re.search(r"Device ([0-9A-Fa-f:]{17}) (.+)", line)
+                if match:
+                    mac_address = match.group(1)
+                    device_name_from_bt = match.group(2)
+                    if device_name_from_bt == js0_device_name:
+                        found_mac = mac_address
+                        break
+            
+            if found_mac:
+                self.device_name = js0_device_name
+                self.device_mac = found_mac
+                print(f"Updated controller info: Name={self.device_name}, MAC={self.device_mac}")
+            else:
+                print(f"Could not find connected Bluetooth device with name '{js0_device_name}'.")
+                self.device_name = None
+                self.device_mac = None
+
+        except FileNotFoundError:
+            print("Error: /proc/bus/input/devices not found.")
+            self.device_name = None
+            self.device_mac = None
+        except subprocess.CalledProcessError as e:
+            print(f"Error calling bluetoothctl: {e}")
+            print(f"bluetoothctl stderr: {e.stderr}")
+            self.device_name = None
+            self.device_mac = None
+        except Exception as e:
+            print(f"An unexpected error occurred while updating controller info: {e}")
+            self.device_name = None
+            self.device_mac = None
 
     def on_disconnect(self):
         print("Controller disconnected")

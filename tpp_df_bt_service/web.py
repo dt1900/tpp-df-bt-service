@@ -5,9 +5,10 @@ import threading
 import importlib.metadata
 
 import subprocess
+import socket # Import socket
 
 httpd = None
-__version__ = "0.0.0-dev"
+__version__ = "unknown"
 
 try:
     version_output = subprocess.check_output(["dpkg-query", "-W", "-f=${Version}", "tpp-df-bt-service"]).decode().strip()
@@ -44,11 +45,17 @@ class VersionHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self.send_error(404, "File Not Found")
 
+class ReusableTCPServer(socketserver.TCPServer):
+    def server_bind(self):
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        super().server_bind()
+
 def start_web_server(controller, port=8000):
     """Starts the HTTP server in a new thread."""
     global httpd
     handler = lambda *args, **kwargs: VersionHttpRequestHandler(*args, controller=controller, **kwargs)
-    httpd = socketserver.TCPServer(("", port), handler)
+    # Use ReusableTCPServer instead of socketserver.TCPServer
+    httpd = ReusableTCPServer(('', port), handler)
     print(f"Serving version page at http://<your-pi-ip>:{port}")
     thread = threading.Thread(target=httpd.serve_forever)
     thread.daemon = True
