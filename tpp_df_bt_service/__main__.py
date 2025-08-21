@@ -38,7 +38,7 @@ if __name__ == "__main__":
             sys.exit(1)
 
         # You may need to change the interface if js0 is not correct.
-        controller = MyController(interface=interface, connecting_using_ds4drv=False)
+        controller = MyController(interface=interface)
         controller.setup(config)
         
         # Start the controller listener in a separate thread
@@ -64,6 +64,3 @@ if __name__ == "__main__":
         print("Please ensure the controller is connected and the interface is correct.")
     finally:
         cleanup(None, None)
-
-
-

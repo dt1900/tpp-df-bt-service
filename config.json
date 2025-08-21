@@ -1,9 +1,9 @@
 {
-  "interface": "/dev/input/js0",
+  "interface": "/dev/input/event4",
   "keymap": {
     "relay_1": [],
-    "relay_2": ["L1", "L2"],
-    "relay_3": ["options", "x"],
-    "relay_4": ["R1", "R2"]
+    "relay_2": ["btn_tl", "btn_tl2"],
+    "relay_3": ["btn_start", "btn_south"],
+    "relay_4": ["btn_tr", "btn_tr2"]
   }
 }
