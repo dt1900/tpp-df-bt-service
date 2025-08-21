@@ -17,6 +17,8 @@ jobs:
 
     - name: Build the .deb package
       run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-pip
         chmod +x build.sh
         ./build.sh
 

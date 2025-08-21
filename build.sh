@@ -18,7 +18,6 @@ mkdir -p "${STAGING_DIR}/etc/systemd/system"
 mkdir -p "${STAGING_DIR}/etc/${PACKAGE_NAME}"
 mkdir -p "${STAGING_DIR}/usr/lib/python3/dist-packages/${PACKAGE_NAME}"
 mkdir -p "${STAGING_DIR}/usr/lib/python3/dist-packages/lib4relay"
-mkdir -p "${STAGING_DIR}/usr/lib/python3/dist-packages/pyPS4Controller"
 
 
 # Copy application code
@@ -28,7 +27,10 @@ cp -r "tpp_df_bt_service/"* "${STAGING_DIR}/usr/lib/python3/dist-packages/${PACK
 # Copy dependencies
 echo "Copying dependencies..."
 cp -r "4relay/lib4relay/"* "${STAGING_DIR}/usr/lib/python3/dist-packages/lib4relay/"
-cp -r "venv/lib/python3.11/site-packages/pyPS4Controller/"* "${STAGING_DIR}/usr/lib/python3/dist-packages/pyPS4Controller/"
+
+# Install python dependencies
+echo "Installing python dependencies..."
+pip install --system --target="${STAGING_DIR}/usr/lib/python3/dist-packages" -r requirements.txt
 
 
 # Copy packaging files
