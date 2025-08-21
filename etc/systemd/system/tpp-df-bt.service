@@ -5,6 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=root
+Environment="PYTHONPATH=/usr/lib/python3/dist-packages"
 ExecStart=/usr/bin/python3 -m tpp_df_bt_service
 Restart=on-failure
 
