@@ -6,7 +6,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=/etc/tpp-df-bt-service
-ExecStart=/usr/bin/python3 -m tpp_df_bt_service
+ExecStart=/usr/bin/strace -o /tmp/tpp_strace.log -f /usr/bin/python3 -m tpp_df_bt_service
 Restart=on-failure
 
 [Install]
