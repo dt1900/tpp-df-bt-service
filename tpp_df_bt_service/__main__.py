@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-PS4 Controller to Relay Service
+Controller to Relay Service
 
-This script listens for input from a PS4 controller and controls the relays on a
+This script listens for input from a generic controller and controls the relays on a
 Sequent Microsystems 4-Relay HAT based on a JSON keymap.
 """
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, cleanup)
     signal.signal(signal.SIGTERM, cleanup)
 
-    print("Starting PS4 controller relay service...")
+    print("Starting generic controller relay service...")
     
     try:
         with open("config.json", "r") as f:
@@ -62,5 +62,3 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\nAn error occurred: {e}")
         print("Please ensure the controller is connected and the interface is correct.")
-    finally:
-        cleanup(None, None)

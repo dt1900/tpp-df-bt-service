@@ -1,5 +1,5 @@
 [Unit]
-Description=TPP PS4 Controller Service
+Description=Relay Controller Service
 After=network.target
 
 [Service]
