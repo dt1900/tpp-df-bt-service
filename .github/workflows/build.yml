@@ -1,8 +1,9 @@
 name: Build and Release
 
 on:
-  release:
-    types: [created]
+  push:
+    branches:
+      - main # Trigger on pushes to the main branch
 
 jobs:
   build:

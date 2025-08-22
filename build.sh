@@ -2,20 +2,28 @@
 
 set -e
 
-if [ -z "$1" ]; then
-  echo "Usage: $0 <version>"
-  exit 1
-fi
-
 PACKAGE_NAME="tpp-df-bt-service"
-VERSION=$1
+
+# Get current version from debian/control (source)
+CURRENT_VERSION=$(grep "Version:" debian/control | awk '{print $2}' | cut -d'-' -f1)
+
+# Parse and increment patch version
+IFS='.' read -r -a version_parts <<< "$CURRENT_VERSION"
+MAJOR=${version_parts[0]}
+MINOR=${version_parts[1]}
+PATCH=${version_parts[2]}
+
+NEW_PATCH=$((PATCH + 1))
+NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
+
+VERSION=${NEW_VERSION}
 STAGING_DIR="${PACKAGE_NAME}-${VERSION}"
 DEBIAN_REVISION=1
 
 # Clean up previous build
 echo "Cleaning up previous build..."
 rm -rf "${STAGING_DIR}"
-rm -f "${PACKAGE_NAME}_${VERSION}-*.deb"
+rm -f "${PACKAGE_NAME}_${CURRENT_VERSION}-*.deb" # Use CURRENT_VERSION for cleanup
 
 # Create staging directory structure
 echo "Creating staging directory..."
@@ -42,9 +50,10 @@ echo "Installing python dependencies..."
 pip install --target="${STAGING_DIR}/usr/lib/python3/dist-packages" -r requirements.txt
 
 
-# Copy packaging files
-echo "Copying packaging files..."
-sed "s/^Version: .*/Version: ${VERSION}-${DEBIAN_REVISION}/" "debian/control" > "${STAGING_DIR}/DEBIAN/control"
+# Copy packaging files and update version in the copied control file
+echo "Copying packaging files and updating version..."
+cp "debian/control" "${STAGING_DIR}/DEBIAN/control" # Copy first
+sed -i "s/^Version: .*/Version: ${NEW_VERSION}-${DEBIAN_REVISION}/" "${STAGING_DIR}/DEBIAN/control" # Then modify in staging
 cp "debian/postinst" "${STAGING_DIR}/DEBIAN/"
 cp "debian/prerm" "${STAGING_DIR}/DEBIAN/"
 chmod +x "${STAGING_DIR}/DEBIAN/postinst" "${STAGING_DIR}/DEBIAN/prerm"
@@ -75,4 +84,3 @@ dpkg-deb --build "${STAGING_DIR}"
 mv "${STAGING_DIR}.deb" "${PACKAGE_NAME}_${VERSION}-${DEBIAN_REVISION}_all.deb"
 
 echo "Build complete: ${PACKAGE_NAME}_${VERSION}-${DEBIAN_REVISION}_all.deb"
-
