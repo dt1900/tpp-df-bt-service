@@ -3,11 +3,12 @@ Description=Relay Controller Service
 After=network.target
 
 [Service]
-Type=simple
+Type=idle
 User=root
 WorkingDirectory=/etc/tpp-df-bt-service
 ExecStart=/usr/bin/python3 -m tpp_df_bt_service
-Restart=on-failure
+Restart=always
+RestartSec=5
 
 [Install]
 WantedBy=multi-user.target

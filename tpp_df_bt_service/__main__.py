@@ -10,8 +10,8 @@ import signal
 import sys
 import json
 import threading
-import time # Import time
-from .service import MyController
+import time
+from .service import MyController, find_controller_device
 from .web import start_web_server, cleanup_web_server
 
 def cleanup(signum, frame):
@@ -28,37 +28,33 @@ if __name__ == "__main__":
 
     print("Starting generic controller relay service...")
     
-    try:
-        with open("config.json", "r") as f:
-            config = json.load(f)
-        
-        interface = config.get("interface")
-        if not interface:
-            print("Error: 'interface' not found in config.json.")
-            sys.exit(1)
+    while True:
+        try:
+            with open("config.json", "r") as f:
+                config = json.load(f)
+            
+            name_pattern = config.get("device_name_pattern")
 
-        # You may need to change the interface if js0 is not correct.
-        controller = MyController(interface=interface)
-        controller.setup(config)
-        
-        # Start the controller listener in a separate thread
-        controller_thread = threading.Thread(target=controller.listen)
-        controller_thread.daemon = True
-        controller_thread.start()
+            # Find the controller device
+            device_path = find_controller_device(name_pattern=name_pattern)
 
-        # Give some time for the controller to connect and for the listener to start
-        time.sleep(10) # Increased sleep duration
+            # Initialize the controller
+            controller = MyController(device_path=device_path)
+            controller.setup(config)
+            
+            # Start the controller listener in a separate thread
+            controller_thread = threading.Thread(target=controller.listen)
+            controller_thread.daemon = True
+            controller_thread.start()
 
-        # Update controller info using bluetoothctl directly
-        controller.update_controller_info()
+            # Start the web server in a background thread
+            start_web_server(controller, 8000)
 
-        # Start the web server in a background thread
-        start_web_server(controller, 8000)
+            # Keep the main thread alive
+            while True:
+                time.sleep(1)
 
-        # Keep the main thread alive
-        while True:
-            time.sleep(1) # Keep the main thread alive
-
-    except Exception as e:
-        print(f"\nAn error occurred: {e}")
-        print("Please ensure the controller is connected and the interface is correct.")
+        except Exception as e:
+            print(f"\nAn error occurred in the main loop: {e}")
+            print("Restarting in 10 seconds...")
+            time.sleep(10)

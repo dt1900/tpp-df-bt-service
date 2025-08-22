@@ -1,5 +1,5 @@
 {
-  "interface": "/dev/input/event4",
+  "device_name_pattern": "^Wireless Controller$",
   "keymap": {
     "relay_1": [],
     "relay_2": ["BTN_TL", "BTN_TL2"],
