@@ -7,16 +7,8 @@ PACKAGE_NAME="tpp-df-bt-service"
 # Get current version from debian/control (source)
 CURRENT_VERSION=$(grep "Version:" debian/control | awk '{print $2}' | cut -d'-' -f1)
 
-# Parse and increment patch version
-IFS='.' read -r -a version_parts <<< "$CURRENT_VERSION"
-MAJOR=${version_parts[0]}
-MINOR=${version_parts[1]}
-PATCH=${version_parts[2]}
-
-NEW_PATCH=$((PATCH + 1))
-NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
-
-VERSION=${NEW_VERSION}
+# Use CURRENT_VERSION directly for the package
+VERSION=${CURRENT_VERSION}
 STAGING_DIR="${PACKAGE_NAME}-${VERSION}"
 DEBIAN_REVISION=1
 
@@ -53,7 +45,7 @@ pip install --target="${STAGING_DIR}/usr/lib/python3/dist-packages" -r requireme
 # Copy packaging files and update version in the copied control file
 echo "Copying packaging files and updating version..."
 cp "debian/control" "${STAGING_DIR}/DEBIAN/control" # Copy first
-sed -i "s/^Version: .*/Version: ${NEW_VERSION}-${DEBIAN_REVISION}/" "${STAGING_DIR}/DEBIAN/control" # Then modify in staging
+sed -i "s/^Version: .*/Version: ${VERSION}/" "${STAGING_DIR}/DEBIAN/control" # Then modify in staging
 cp "debian/postinst" "${STAGING_DIR}/DEBIAN/"
 cp "debian/prerm" "${STAGING_DIR}/DEBIAN/"
 chmod +x "${STAGING_DIR}/DEBIAN/postinst" "${STAGING_DIR}/DEBIAN/prerm"

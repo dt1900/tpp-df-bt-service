@@ -6,7 +6,7 @@ After=network.target
 Type=idle
 User=root
 WorkingDirectory=/etc/tpp-df-bt-service
-ExecStart=/usr/bin/python3 -m tpp_df_bt_service
+ExecStart=/usr/bin/python3 -u -m tpp_df_bt_service
 Restart=always
 RestartSec=5
 
