@@ -2,14 +2,14 @@
 
 set -e
 
-PACKAGE_NAME="tpp-df-bt-service"
-
-# Use the first argument as the version, otherwise use the version from debian/control
-if [ -n "$1" ]; then
-  VERSION=$1
-else
-  VERSION=$(grep "Version:" debian/control | awk '{print $2}' | cut -d'-' -f1)
+if [ -z "$1" ]; then
+  echo "Error: Version number not provided."
+  echo "Usage: ./build.sh <version>"
+  exit 1
 fi
+
+PACKAGE_NAME="tpp-df-bt-service"
+VERSION=$1
 STAGING_DIR="${PACKAGE_NAME}-${VERSION}"
 DEBIAN_REVISION=1
 
