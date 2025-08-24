@@ -21,10 +21,9 @@ jobs:
         run: |
           shopt -s nocasematch
           TITLE="${{ github.event.pull_request.title }}"
-          RELEASE_INFO=$(echo "$TITLE" | sed -n 's/.*\[\(release[^]]*\)\].*/\1/pi')
-          if [ -n "$RELEASE_INFO" ]; then
-            VERSION=$(echo "$RELEASE_INFO" | sed 's/release //i')
-            if [ -n "$VERSION" ]; then
+          if echo "$TITLE" | grep -q '\\[release'; then
+            VERSION=$(echo "$TITLE" | grep -oP '(?i)(?<=\\[release ).*(?=])' || true)
+            if [ -n "$VERSION" ] && [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
               echo "version=${VERSION}" >> $GITHUB_OUTPUT
               echo "release_triggered=true" >> $GITHUB_OUTPUT
             else
