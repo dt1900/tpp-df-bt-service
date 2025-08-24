@@ -1,0 +1,59 @@
+name: Build and Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          shopt -s nocasematch
+          TITLE="${{ github.event.pull_request.title }}"
+          if [[ "$TITLE" == *"[release"* ]]; then
+            RELEASE_CONTENT=$(echo "$TITLE" | awk -F'[][]' '{print $2}')
+            VERSION=$(echo "$RELEASE_CONTENT" | sed 's/release //i' | xargs)
+            if [ -n "$VERSION" ] && [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "version=${VERSION}" >> $GITHUB_OUTPUT
+              echo "release_triggered=true" >> $GITHUB_OUTPUT
+            else
+              LATEST_RELEASE_TAG=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name' || echo "0.0.0")
+              if [ "$LATEST_RELEASE_TAG" == "null" ]; then
+                LATEST_RELEASE_TAG="0.0.0"
+              fi
+              VERSION=$(echo $LATEST_RELEASE_TAG | awk -F. -v OFS=. '{$3++;print}')
+              echo "version=${VERSION}" >> $GITHUB_OUTPUT
+              echo "release_triggered=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "release_triggered=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Build the .deb package
+        if: steps.version.outputs.release_triggered == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          chmod +x build.sh
+          ./build.sh ${{ steps.version.outputs.version }}
+
+      - name: Create Release
+        if: steps.version.outputs.release_triggered == 'true'
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: "Release ${{ steps.version.outputs.version }}"
+          body: ${{ github.event.pull_request.body }}
+          files: ./tpp-df-bt-service_*-1_all.deb

@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+echo "Reloading systemd and starting service..."
+systemctl daemon-reload
+systemctl enable tpp-df-bt.service
+systemctl start tpp-df-bt.service
