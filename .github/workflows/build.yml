@@ -16,12 +16,20 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Get version from PR title
+      - name: Get version
         id: version
         run: |
           shopt -s nocasematch
-          VERSION=$(echo "${{ github.event.pull_request.title }}" | grep -oP '(?<=\[release ).*(?=])')
-          if [ -n "$VERSION" ]; then
+          if [[ "${{ github.event.pull_request.title }}" =~ \[\[release( )*\]( )*([0-9]+\.[0-9]+\.[0-9]+)?\] ]; then
+            if [[ "${{ github.event.pull_request.title }}" =~ \[\[release( )*\]( )*([0-9]+\.[0-9]+\.[0-9]+)\] ]; then
+              VERSION=$(echo "${{ github.event.pull_request.title }}" | grep -oP '(?i)(?<=\[release ).*(?=])')
+            else
+              LATEST_RELEASE_TAG=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name' || echo "0.0.0")
+              if [ "$LATEST_RELEASE_TAG" == "null" ]; then
+                LATEST_RELEASE_TAG="0.0.0"
+              fi
+              VERSION=$(echo $LATEST_RELEASE_TAG | awk -F. -v OFS=. '{$3++;print}')
+            fi
             echo "version=${VERSION}" >> $GITHUB_OUTPUT
             echo "release_triggered=true" >> $GITHUB_OUTPUT
           else
