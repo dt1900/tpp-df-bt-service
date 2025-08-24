@@ -3,4 +3,4 @@ Version: 1.0.1
 Architecture: all
 Maintainer: dt1900 <thompson.daniel@gmail.com>
 Description: A service to control a 4-relay board with a controller.
-Depends: python3, python3-evdev
+Depends: python3
