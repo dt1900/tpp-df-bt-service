@@ -20,8 +20,9 @@ jobs:
         id: version
         run: |
           shopt -s nocasematch
-          if echo "${{ github.event.pull_request.title }}" | grep -q '\\[release'; then
-            VERSION=$(echo "${{ github.event.pull_request.title }}" | grep -oP '(?i)(?<=\[release ).*(?=])')
+          TITLE="${{ github.event.pull_request.title }}"
+          if echo "$TITLE" | grep -q '\\[release'; then
+            VERSION=$(echo "$TITLE" | grep -oP '(?i)(?<=\\[release ).*(?=])')
             if [ -n "$VERSION" ]; then
               echo "version=${VERSION}" >> $GITHUB_OUTPUT
               echo "release_triggered=true" >> $GITHUB_OUTPUT
