@@ -6,7 +6,7 @@ on:
       - main
       - dev
     tags:
-      - 'v*.*.*'
+      - '*.*.*'
 
 jobs:
   build:
@@ -20,12 +20,7 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y python3-pip
         chmod +x build.sh
-        # We need to extract the version from the tag
-        VERSION=${{ github.ref_name }}
-        if [[ $VERSION == v* ]]; then
-          VERSION=${VERSION:1}
-        fi
-        ./build.sh $VERSION
+        ./build.sh ${{ github.ref_name }}
     - name: Upload artifact
       uses: actions/upload-artifact@v3
       with:
