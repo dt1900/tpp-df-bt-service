@@ -4,11 +4,12 @@ set -e
 
 PACKAGE_NAME="tpp-df-bt-service"
 
-# Get current version from debian/control (source)
-CURRENT_VERSION=$(grep "Version:" debian/control | awk '{print $2}' | cut -d'-' -f1)
-
-# Use CURRENT_VERSION directly for the package
-VERSION=${CURRENT_VERSION}
+# Use the first argument as the version, otherwise use the version from debian/control
+if [ -n "$1" ]; then
+  VERSION=$1
+else
+  VERSION=$(grep "Version:" debian/control | awk '{print $2}' | cut -d'-' -f1)
+fi
 STAGING_DIR="${PACKAGE_NAME}-${VERSION}"
 DEBIAN_REVISION=1
 
