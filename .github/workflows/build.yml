@@ -8,7 +8,7 @@ on:
 
 jobs:
   release:
-    if: github.event.pull_request.merged == true && contains(github.event.pull_request.head_commit.message, '[release')
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -16,13 +16,20 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Get version from commit message
+      - name: Get version from PR title
         id: version
         run: |
-          VERSION=$(echo "${{ github.event.pull_request.head_commit.message }}" | grep -oP '(?<=\[release ).*(?=])')
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          shopt -s nocasematch
+          if [[ "${{ github.event.pull_request.title }}" =~ \[\[release( )*\]( )*([0-9]+\.[0-9]+\.[0-9]+)\] ]; then
+            VERSION=$(echo "${{ github.event.pull_request.title }}" | grep -oP '(?i)(?<=\[release ).*(?=])')
+            echo "version=${VERSION}" >> $GITHUB_OUTPUT
+            echo "release_triggered=true" >> $GITHUB_OUTPUT
+          else
+            echo "release_triggered=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Build the .deb package
+        if: steps.version.outputs.release_triggered == 'true'
         run: |
           sudo apt-get update
           sudo apt-get install -y python3-pip
@@ -30,6 +37,7 @@ jobs:
           ./build.sh ${{ steps.version.outputs.version }}
 
       - name: Create Release
+        if: steps.version.outputs.release_triggered == 'true'
         id: create_release
         uses: softprops/action-gh-release@v1
         with:
