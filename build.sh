@@ -38,9 +38,7 @@ cp "tpp_df_bt_service/web.py" "${STAGING_DIR}/usr/lib/python3/dist-packages/tpp_
 echo "Copying dependencies..."
 cp -r "4relay/lib4relay/"* "${STAGING_DIR}/usr/lib/python3/dist-packages/lib4relay/"
 
-# Install python dependencies
-echo "Installing python dependencies..."
-pip install --target="${STAGING_DIR}/usr/lib/python3/dist-packages" -r requirements.txt
+
 
 
 # Copy packaging files and update version in the copied control file
