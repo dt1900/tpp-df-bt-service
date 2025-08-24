@@ -73,6 +73,19 @@ For example:
 
 This will create a file named `tpp-df-bt-service_<version>-1_all.deb`.
 
+## Installation
+
+To install the service from a `.deb` package:
+
+1.  Download the latest `.deb` package from the [GitHub Releases page](https://github.com/dt1900/tpp-df-bt-service/releases).
+2.  Install the package using `apt`:
+
+    ```bash
+    sudo apt install ./tpp-df-bt-service_<version>-1_all.deb
+    ```
+
+    Replace `<version>` with the actual version number of the downloaded package.
+
 ## Service Management
 
 The service is managed by `systemd`.
