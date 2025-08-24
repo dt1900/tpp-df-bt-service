@@ -1,44 +1,39 @@
 name: Build and Release
 
 on:
-  push:
+  pull_request:
+    types: [closed]
     branches:
       - main
-      - dev
-    tags:
-      - '*.*.*'
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Check out code
-      uses: actions/checkout@v3
-
-    - name: Build the .deb package
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y python3-pip
-        chmod +x build.sh
-        ./build.sh ${{ github.ref_name }}
-    - name: Upload artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: deb-package
-        path: ./tpp-df-bt-service_*-1_all.deb
-
   release:
-    needs: build
-    if: startsWith(github.ref, 'refs/tags/')
+    if: github.event.pull_request.merged == true && contains(github.event.pull_request.head_commit.message, '[release')
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
-      - name: Download artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: deb-package
-      - name: Upload .deb to release
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Get version from commit message
+        id: version
+        run: |
+          VERSION=$(echo "${{ github.event.pull_request.head_commit.message }}" | grep -oP '(?<=\[release ).*(?=])')
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Build the .deb package
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-pip
+          chmod +x build.sh
+          ./build.sh ${{ steps.version.outputs.version }}
+
+      - name: Create Release
+        id: create_release
         uses: softprops/action-gh-release@v1
         with:
-          files: tpp-df-bt-service_*-1_all.deb
+          tag_name: ${{ steps.version.outputs.version }}
+          name: "Release ${{ steps.version.outputs.version }}"
+          body: ${{ github.event.pull_request.body }}
+          files: ./tpp-df-bt-service_*-1_all.deb
