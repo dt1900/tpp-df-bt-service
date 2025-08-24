@@ -20,18 +20,20 @@ jobs:
         id: version
         run: |
           shopt -s nocasematch
-          if [[ "${{ github.event.pull_request.title }}" =~ \[\[release( )*\]( )*([0-9]+\.[0-9]+\.[0-9]+)?\] ]; then
-            if [[ "${{ github.event.pull_request.title }}" =~ \[\[release( )*\]( )*([0-9]+\.[0-9]+\.[0-9]+)\] ]; then
-              VERSION=$(echo "${{ github.event.pull_request.title }}" | grep -oP '(?i)(?<=\[release ).*(?=])')
+          if echo "${{ github.event.pull_request.title }}" | grep -q '\\[release'; then
+            VERSION=$(echo "${{ github.event.pull_request.title }}" | grep -oP '(?i)(?<=\[release ).*(?=])')
+            if [ -n "$VERSION" ]; then
+              echo "version=${VERSION}" >> $GITHUB_OUTPUT
+              echo "release_triggered=true" >> $GITHUB_OUTPUT
             else
               LATEST_RELEASE_TAG=$(curl -s "https://api.github.com/repos/${{ github.repository }}/releases/latest" | jq -r '.tag_name' || echo "0.0.0")
               if [ "$LATEST_RELEASE_TAG" == "null" ]; then
                 LATEST_RELEASE_TAG="0.0.0"
               fi
               VERSION=$(echo $LATEST_RELEASE_TAG | awk -F. -v OFS=. '{$3++;print}')
+              echo "version=${VERSION}" >> $GITHUB_OUTPUT
+              echo "release_triggered=true" >> $GITHUB_OUTPUT
             fi
-            echo "version=${VERSION}" >> $GITHUB_OUTPUT
-            echo "release_triggered=true" >> $GITHUB_OUTPUT
           else
             echo "release_triggered=false" >> $GITHUB_OUTPUT
           fi
