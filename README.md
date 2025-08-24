@@ -23,7 +23,7 @@ The service is configured via the `/etc/tpp-df-bt-service/config.json` file.
 ```
 
 *   `device_name_pattern`: A regular expression used to identify the controller device.
-*   `keymap`: Maps controller buttons to relays. The keys are the relay numbers (e.g., "relay_1"), and the values are a list of button names from the `evdev` library.
+*   `keymap`: Maps controller buttons to relays. The keys are the relay numbers (e.g., "relay_1"), and the values are a list of button names from the [`evdev`](https://python-evdev.readthedocs.io/en/latest/) library.
 
 ## The Service
 
@@ -31,7 +31,7 @@ The service consists of two main components: the controller/relay service and a 
 
 ### Controller/Relay (service.py)
 
-This is the core of the service. It listens for input from the paired controller and controls the relays based on the mappings in the `config.json` file. It uses the `evdev` library to handle controller input and the `lib4relay` library to control the relays.
+This is the core of the service. It listens for input from the paired controller and controls the relays based on the mappings in the `config.json` file. It uses the [`evdev`](https://python-evdev.readthedocs.io/en/latest/) library to handle controller input and the `lib4relay` library to control the relays.
 
 ### Web Server (web.py)
 
