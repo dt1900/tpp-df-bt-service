@@ -1,1 +1,1 @@
-will update soon.
+this should be release 1.0.1, despite not putting it in the commit message.
