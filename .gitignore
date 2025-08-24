@@ -9,3 +9,5 @@ __pycache__/
 tpp-df-bt-service-*/
 build/
 dist/
+
+.ai/
