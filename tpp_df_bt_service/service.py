@@ -172,10 +172,8 @@ class MyController:
         """Listens for input events and handles device disconnection."""
         while True:
             if not self.device_path:
-                print("No device path set. Scanning for controller...")
                 self.device_path = find_controller_device()
                 if not self.device_path:
-                    print("No controller found. Retrying in 10 seconds...")
                     time.sleep(10)
                     continue
 
