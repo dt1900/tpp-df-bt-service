@@ -118,4 +118,3 @@ To view the logs for the service:
 ```bash
 sudo journalctl -u tpp-df-bt.service
 ```
-
