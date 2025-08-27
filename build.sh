@@ -33,6 +33,7 @@ cp "tpp_df_bt_service/__init__.py" "${STAGING_DIR}/usr/lib/python3/dist-packages
 cp "tpp_df_bt_service/__main__.py" "${STAGING_DIR}/usr/lib/python3/dist-packages/tpp_df_bt_service/"
 cp "tpp_df_bt_service/service.py" "${STAGING_DIR}/usr/lib/python3/dist-packages/tpp_df_bt_service/"
 cp "tpp_df_bt_service/web.py" "${STAGING_DIR}/usr/lib/python3/dist-packages/tpp_df_bt_service/"
+cp -r "tpp_df_bt_service/controllers" "${STAGING_DIR}/usr/lib/python3/dist-packages/tpp_df_bt_service/"
 
 # Copy dependencies
 echo "Copying dependencies..."

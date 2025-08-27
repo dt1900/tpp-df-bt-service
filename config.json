@@ -2,6 +2,7 @@
   "allowed_devices": [
     {
       "device_name_pattern": "^Wireless Controller$",
+      "controller": "wireless_controller.WirelessController",
       "keymap": {
         "relay_1": [],
         "relay_2": ["BTN_TL", "BTN_TL2"],
@@ -11,11 +12,19 @@
     },
     {
       "device_name_pattern": "^JX-05(?!.*Consumer Control)",
+      "controller": "jx05_controller.JX05Controller",
       "virtual_buttons": {
-        "relay_1": {"x_min": 0, "x_max": 4095, "y_min": 1000, "y_max": 3200},
-        "relay_2": {"x_min": 250, "x_max": 1900, "y_min": 2600, "y_max": 2700},
-        "relay_3": {"x_min": 800, "x_max": 900, "y_min": 500, "y_max": 2300},
-        "relay_4": {"x_min": 400, "x_max": 2800, "y_min": 2600, "y_max": 2700}
+        "relay_2": [
+          {"x_min": 0, "x_max": 4095, "y_min": 3000, "y_max": 4095},
+          {"x_min": 0, "x_max": 1000, "y_min": 0, "y_max": 4095}
+        ],
+        "relay_4": [
+          {"x_min": 0, "x_max": 4095, "y_min": 0, "y_max": 1000},
+          {"x_min": 3000, "x_max": 4095, "y_min": 0, "y_max": 4095}
+        ],
+        "relay_3": [
+          {"x_min": 800, "x_max": 900, "y_min": 2200, "y_max": 2400}
+        ]
       }
     }
   ]
