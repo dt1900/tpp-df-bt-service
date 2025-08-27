@@ -16,14 +16,14 @@ The service is configured via the [`/etc/tpp-df-bt-service/config.json`](config.
   "keymap": {
     "relay_1": [],
     "relay_2": ["BTN_TL", "BTN_TL2"],
-    "relay_3": ["BTN_START", "BTN_SOUTH"],
-    "relay_4": ["BTN_TR", "BTN_TR2"]
+    "relay_3": ["BTN_START", "BTN_SOUTH", "DPAD_DOWN"],
+    "relay_4": ["BTN_TR", "BTN_TR2", "DPAD_RIGHT"]
   }
 }
 ```
 
 *   `device_name_pattern`: A regular expression used to identify the controller device.
-*   `keymap`: Maps controller buttons to relays. The keys are the relay numbers (e.g., "relay_1"), and the values are a list of button names from the [`evdev`](https://python-evdev.readthedocs.io/en/latest/) library.
+*   `keymap`: Maps controller buttons to relays. The keys are the relay numbers (e.g., "relay_1"), and the values are a list of button names from the [`evdev`](https://python-evdev.readthedocs.io/en/latest/) library. The d-pad can be mapped using `DPAD_UP`, `DPAD_DOWN`, `DPAD_LEFT`, and `DPAD_RIGHT`.
 
 ## The Service
 
@@ -77,7 +77,7 @@ To build the package, run the script with a version number:
 For example:
 
 ```bash
-./build.sh 1.0.17
+./build.sh 1.0.19
 ```
 
 This will create a file named `tpp-df-bt-service_<version>-1_all.deb`.

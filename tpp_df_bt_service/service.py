@@ -38,6 +38,7 @@ class MyController:
         self.keymap = {}
         self.button_states = {}
         self.relay_to_buttons = {} # This will now store evdev integer codes
+        self.dpad_to_relay = {}
         self.relay_hardware_states = {1: 0, 2: 0, 3: 0, 4: 0}
         self.is_connected = False
         self.device_name = device_name
@@ -103,12 +104,23 @@ class MyController:
                 # Resolve button names to evdev integer codes
                 evdev_codes = []
                 for name in button_names:
-                    try:
-                        # Use getattr to get the integer value of the ecodes constant
-                        code = getattr(ecodes, name.upper())
-                        evdev_codes.append(code)
-                    except AttributeError:
-                        print(f"Warning: Unknown evdev code '{name}' in config.json. Skipping.")
+                    if name.startswith("DPAD_"):
+                        direction = name.split("_")[1]
+                        if direction == "UP":
+                            self.dpad_to_relay[("ABS_HAT0Y", -1)] = relay_num
+                        elif direction == "DOWN":
+                            self.dpad_to_relay[("ABS_HAT0Y", 1)] = relay_num
+                        elif direction == "LEFT":
+                            self.dpad_to_relay[("ABS_HAT0X", -1)] = relay_num
+                        elif direction == "RIGHT":
+                            self.dpad_to_relay[("ABS_HAT0X", 1)] = relay_num
+                    else:
+                        try:
+                            # Use getattr to get the integer value of the ecodes constant
+                            code = getattr(ecodes, name.upper())
+                            evdev_codes.append(code)
+                        except AttributeError:
+                            print(f"Warning: Unknown evdev code '{name}' in config.json. Skipping.")
                 
                 self.relay_to_buttons[relay_num] = evdev_codes
             except (ValueError, IndexError):
@@ -171,13 +183,19 @@ class MyController:
                 print(f"Successfully connected to {self.device_name}. Listening for events...")
 
                 for event in self.device.read_loop():
-                    if event.code in self.button_states:
-                        if event.type == ecodes.EV_KEY:
-                            pressed = (event.value == 1)
-                            self._handle_button_event(event.code, pressed)
-                        elif event.type == ecodes.EV_ABS:
-                            is_active = (event.value != 0)
-                            self._handle_button_event(event.code, is_active)
+                    if event.type == ecodes.EV_KEY and event.code in self.button_states:
+                        pressed = (event.value == 1)
+                        self._handle_button_event(event.code, pressed)
+                    elif event.type == ecodes.EV_ABS and event.code in [ecodes.ABS_HAT0X, ecodes.ABS_HAT0Y]:
+                        if (ecodes.bytype[event.type][event.code], event.value) in self.dpad_to_relay:
+                            relay_num = self.dpad_to_relay[(ecodes.bytype[event.type][event.code], event.value)]
+                            self._toggle_relay(relay_num)
+                        elif event.value == 0: # D-pad released
+                            for key, relay_num in self.dpad_to_relay.items():
+                                if key[0] == ecodes.bytype[event.type][event.code]:
+                                    lib4relay.set(0, relay_num, 0)
+                                    self.relay_hardware_states[relay_num] = 0
+
 
             except (OSError, FileNotFoundError) as e:
                 self.is_connected = False
@@ -206,6 +224,12 @@ class MyController:
         else:
             pass
 
+    def _toggle_relay(self, relay_num):
+        """Toggles the state of a relay."""
+        current_state = self.relay_hardware_states[relay_num]
+        new_state = 1 - current_state
+        lib4relay.set(0, relay_num, new_state)
+        self.relay_hardware_states[relay_num] = new_state
 
     def cleanup(self):
         """Turns off all relays and closes the device."""

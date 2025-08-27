@@ -3,7 +3,7 @@
   "keymap": {
     "relay_1": [],
     "relay_2": ["BTN_TL", "BTN_TL2"],
-    "relay_3": ["BTN_START", "BTN_SOUTH"],
-    "relay_4": ["BTN_TR", "BTN_TR2"]
+    "relay_3": ["BTN_START", "BTN_SOUTH", "DPAD_DOWN"],
+    "relay_4": ["BTN_TR", "BTN_TR2", "DPAD_RIGHT"]
   }
 }
