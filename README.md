@@ -2,6 +2,10 @@
 
 This service allows a Raspberry Pi to control a 4-relay board using a Bluetooth controller. It is designed to run as a background service.
 
+## Hardware
+
+This service is specifcally written to run on a Raspberry Pi 3b+ with a Sequent Microsystems 4-Relay board. A similar hardware setup can be found here: https://www.microcenter.com/FindIt/?t=6H7NJE
+
 ## Pairing a Controller
 
 **IMPORTANT:** A controller must be paired with the Raspberry Pi. The service will automatically detect and use the first available controller that matches the `device_name_pattern` in the [`config.json`](config.json) file.
@@ -114,3 +118,4 @@ To view the logs for the service:
 ```bash
 sudo journalctl -u tpp-df-bt.service
 ```
+
