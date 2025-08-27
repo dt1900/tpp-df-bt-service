@@ -10,7 +10,7 @@
       }
     },
     {
-      "device_name_pattern": "^JX-05$",
+      "device_name_pattern": "^JX-05(?!.*Consumer Control)",
       "keymap": {
         "relay_1": ["KEY_PLAYPAUSE"],
         "relay_2": ["KEY_VOLUMEUP"],
