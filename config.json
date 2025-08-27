@@ -11,11 +11,11 @@
     },
     {
       "device_name_pattern": "^JX-05(?!.*Consumer Control)",
-      "keymap": {
-        "relay_1": ["KEY_PLAYPAUSE"],
-        "relay_2": ["KEY_VOLUMEUP"],
-        "relay_3": ["KEY_VOLUMEDOWN"],
-        "relay_4": ["KEY_NEXTSONG"]
+      "virtual_buttons": {
+        "relay_1": {"x_min": 0, "x_max": 4095, "y_min": 1000, "y_max": 3200},
+        "relay_2": {"x_min": 250, "x_max": 1900, "y_min": 2600, "y_max": 2700},
+        "relay_3": {"x_min": 800, "x_max": 900, "y_min": 500, "y_max": 2300},
+        "relay_4": {"x_min": 400, "x_max": 2800, "y_min": 2600, "y_max": 2700}
       }
     }
   ]

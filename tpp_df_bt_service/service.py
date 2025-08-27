@@ -16,30 +16,8 @@ def find_controller_device(allowed_devices):
 
     for device_config in allowed_devices:
         name_pattern = device_config.get("device_name_pattern")
-        keymap = device_config.get("keymap")
-        if not name_pattern or not keymap:
+        if not name_pattern:
             continue
-
-        # Get all button names from the keymap
-        all_button_names = set()
-        for relay_key, button_names in keymap.items():
-            for name in button_names:
-                if not name.startswith("DPAD_"):
-                    all_button_names.add(name.upper())
-
-        # Convert button names to evdev codes
-        expected_codes = set()
-        for name in all_button_names:
-            try:
-                code = getattr(ecodes, name)
-                expected_codes.add(code)
-            except AttributeError:
-                # This name is in the config but not a valid evdev code.
-                # We can ignore it here; the main class logs a warning for this.
-                pass
-
-        if not expected_codes:
-            continue # No valid keys to check for this device
 
         for path in mngd_objs:
             con_state = mngd_objs[path].get('org.bluez.Device1', {}).get('Connected', False)
@@ -50,29 +28,26 @@ def find_controller_device(allowed_devices):
                 if re.search(name_pattern, name, re.IGNORECASE):
                     devices = [InputDevice(path) for path in list_devices()]
                     for device in devices:
-                        if name.lower() in device.name.lower():
-                            capabilities = device.capabilities(verbose=False)
-                            if ecodes.EV_KEY in capabilities:
-                                supported_codes = set(capabilities[ecodes.EV_KEY])
-                                # Check if any of the expected keys are supported by this device
-                                if not expected_codes.isdisjoint(supported_codes):
-                                    return device.path, name, addr, keymap
+                        if re.search(name_pattern, device.name, re.IGNORECASE):
+                            return device.path, name, addr, device_config
     return None, None, None, None
 
 class MyController:
     """A custom controller class to handle generic input events and map them to relays."""
 
     def __init__(self, device_path=None, device_name=None, device_mac=None, **kwargs):
-        self.keymap = {}
         self.button_states = {}
         self.relay_to_buttons = {} # This will now store evdev integer codes
         self.dpad_to_relay = {}
+        self.virtual_buttons = {}
         self.relay_hardware_states = {1: 0, 2: 0, 3: 0, 4: 0}
         self.is_connected = False
         self.device_name = device_name
         self.device_mac = device_mac
         self.device_path = device_path
         self.device = None
+        self.touch_x = None
+        self.touch_y = None
 
         if self.device_path:
             try:
@@ -106,23 +81,27 @@ class MyController:
             return self.device.capabilities(verbose=verbose)
         return None
 
-    def setup(self, keymap):
+    def setup(self, device_config):
         """Loads configuration and initializes hardware."""
         print("Setting up controller and relays...")
-        print(f"Keymap received in setup: {keymap}")
-        self._load_config(keymap)
+        self._load_config(device_config)
         self._initialize_button_states()
         self._initialize_relays()
         print("Setup complete. Listening for controller input...")
 
-    def _load_config(self, keymap):
-        """Loads the configuration from the provided keymap."""
-        print(f"Keymap in _load_config: {keymap}")
-        print(f"Type of keymap in _load_config: {type(keymap)}")
-        if not keymap:
-            print("Error: 'keymap' not found or is empty in config.json.")
+    def _load_config(self, device_config):
+        """Loads the configuration from the provided device_config."""
+        if "keymap" in device_config:
+            self._load_keymap(device_config["keymap"])
+        elif "virtual_buttons" in device_config:
+            self._load_virtual_buttons(device_config["virtual_buttons"])
+        else:
+            print("Error: No valid keymap or virtual_buttons found in device config.")
             sys.exit(1)
 
+    def _load_keymap(self, keymap):
+        """Loads the configuration from the provided keymap."""
+        print(f"Keymap in _load_keymap: {keymap}")
         # Invert the map for easier lookup: relay -> [buttons]
         for relay_key, button_names in keymap.items():
             try:
@@ -159,6 +138,11 @@ class MyController:
         if not self.relay_to_buttons:
             print("Error: No valid relay mappings found in the keymap.")
             sys.exit(1)
+
+    def _load_virtual_buttons(self, virtual_buttons):
+        """Loads the virtual button configuration."""
+        print(f"Virtual buttons in _load_virtual_buttons: {virtual_buttons}")
+        self.virtual_buttons = virtual_buttons
 
     def _initialize_button_states(self):
         """Initializes the state tracker for all buttons defined in the keymap."""
@@ -204,11 +188,11 @@ class MyController:
         while True:
             if not self.device_path:
                 allowed_devices = self.get_allowed_devices()
-                self.device_path, self.device_name, self.device_mac, keymap = find_controller_device(allowed_devices)
+                self.device_path, self.device_name, self.device_mac, device_config = find_controller_device(allowed_devices)
                 if not self.device_path:
                     time.sleep(10)
                     continue
-                self.setup(keymap)
+                self.setup(device_config)
 
 
             print(f"Connecting to device: {self.device_path}...")
@@ -230,6 +214,17 @@ class MyController:
                                 if key[0] == ecodes.bytype[event.type][event.code]:
                                     lib4relay.set(0, relay_num, 0)
                                     self.relay_hardware_states[relay_num] = 0
+                    elif event.type == ecodes.EV_KEY and event.code == ecodes.BTN_TOUCH:
+                        if event.value == 0: # Touch released
+                            self._handle_touch_event()
+                    elif event.type == ecodes.EV_ABS and event.code == ecodes.ABS_X:
+                        self.touch_x = event.value
+                    elif event.type == ecodes.EV_ABS and event.code == ecodes.ABS_Y:
+                        self.touch_y = event.value
+                    elif event.type == ecodes.EV_ABS and event.code == ecodes.ABS_MT_POSITION_X:
+                        self.touch_x = event.value
+                    elif event.type == ecodes.EV_ABS and event.code == ecodes.ABS_MT_POSITION_Y:
+                        self.touch_y = event.value
 
 
             except (OSError, FileNotFoundError) as e:
@@ -259,6 +254,22 @@ class MyController:
             self._update_relays()
         else:
             pass
+
+    def _handle_touch_event(self):
+        """Handles a touch event by checking virtual buttons."""
+        if self.touch_x is not None and self.touch_y is not None:
+            for relay_key, coords in self.virtual_buttons.items():
+                try:
+                    relay_num = int(relay_key.split('_')[1])
+                    if coords["x_min"] <= self.touch_x <= coords["x_max"] and \
+                       coords["y_min"] <= self.touch_y <= coords["y_max"]:
+                        self._toggle_relay(relay_num)
+                        break # Exit after first match
+                except (ValueError, IndexError):
+                    print(f"Warning: Invalid relay key format '{relay_key}' in virtual_buttons. Skipping.")
+            # Reset touch coordinates
+            self.touch_x = None
+            self.touch_y = None
 
     def _toggle_relay(self, relay_num):
         """Toggles the state of a relay."""
