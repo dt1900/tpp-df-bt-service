@@ -75,29 +75,31 @@ The [`build.sh`](build.sh) script creates a `.deb` package for the service.
 To build the package, run the script with a version number:
 
 ```bash
-./build.sh <version>
+./build.sh 1.0.20
 ```
 
-For example:
-
-```bash
-./build.sh 1.0.19
-```
-
-This will create a file named `tpp-df-bt-service_<version>-1_all.deb`.
+This will create a file named `tpp-df-bt-service_1.0.20-1_all.deb`.
 
 ## Installation
 
-To install the service from a `.deb` package:
+To install the service from a `.deb` package, you can either download it manually or install it directly from the GitHub URL.
+
+### Manual Installation
 
 1.  Download the latest `.deb` package from the [GitHub Releases page](https://github.com/dt1900/tpp-df-bt-service/releases).
 2.  Install the package using `apt`:
 
     ```bash
-    sudo apt install ./tpp-df-bt-service_<version>-1_all.deb
+    sudo apt install ./tpp-df-bt-service_1.0.20-1_all.deb
     ```
 
-    Replace `<version>` with the actual version number of the downloaded package.
+### Direct Installation from GitHub
+
+You can also install the package directly from the GitHub URL.
+
+```bash
+curl -L https://github.com/dt1900/tpp-df-bt-service/releases/download/1.0.20/tpp-df-bt-service_1.0.20-1_all.deb -o tpp-df-bt-service_1.0.20-1_all.deb && sudo apt install ./tpp-df-bt-service_1.0.20-1_all.deb
+```
 
 ## Service Management
 
