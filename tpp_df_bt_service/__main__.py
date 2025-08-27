@@ -11,7 +11,7 @@ import sys
 import json
 import threading
 import time
-from .service import MyController, find_controller_device
+from .service import MyController
 from .web import start_web_server, cleanup_web_server
 
 def cleanup(signum, frame):
@@ -33,13 +33,8 @@ if __name__ == "__main__":
             with open("config.json", "r") as f:
                 config = json.load(f)
             
-            name_pattern = config.get("device_name_pattern")
-
-            # Find the controller device
-            device_path = find_controller_device(name_pattern=name_pattern)
-
             # Initialize the controller
-            controller = MyController(device_path=device_path)
+            controller = MyController()
             controller.setup(config)
             
             # Start the controller listener in a separate thread

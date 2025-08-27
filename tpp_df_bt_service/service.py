@@ -5,36 +5,43 @@ import re
 import subprocess
 import time
 import traceback
+import pydbus
 from evdev import InputDevice, list_devices, ecodes
 
-def find_controller_device(name_pattern=None):
-    """Scans for a suitable controller device."""
-    devices = [InputDevice(path) for path in list_devices()]
-    for device in devices:
-        if name_pattern and re.search(name_pattern, device.name):
-            print(f"Found controller by name pattern: {device.name} at {device.path}")
-            return device.path
+def find_controller_device(name_pattern):
+    """Scans for a suitable controller device using pydbus and evdev."""
+    bus = pydbus.SystemBus()
+    mngr = bus.get('org.bluez', '/')
+    mngd_objs = mngr.GetManagedObjects()
 
-        capabilities = device.capabilities(verbose=False)
-        # Check for gamepad-like capabilities
-        if ecodes.EV_KEY in capabilities and (
-            set([ecodes.BTN_GAMEPAD, ecodes.BTN_SOUTH, ecodes.BTN_A, ecodes.BTN_B, ecodes.BTN_X, ecodes.BTN_Y]) & set(capabilities[ecodes.EV_KEY])
-        ):
-            print(f"Found controller by capabilities: {device.name} at {device.path}")
-            return device.path
-    return None
+    for path in mngd_objs:
+        con_state = mngd_objs[path].get('org.bluez.Device1', {}).get('Connected', False)
+        if con_state:
+            name = mngd_objs[path].get('org.bluez.Device1', {}).get('Name')
+            addr = mngd_objs[path].get('org.bluez.Device1', {}).get('Address')
+
+            if re.search(name_pattern, name, re.IGNORECASE):
+                devices = [InputDevice(path) for path in list_devices()]
+                for device in devices:
+                    if name.lower() in device.name.lower():
+                        capabilities = device.capabilities(verbose=False)
+                        if ecodes.EV_KEY in capabilities and (
+                            set([ecodes.BTN_GAMEPAD, ecodes.BTN_SOUTH, ecodes.BTN_A, ecodes.BTN_B, ecodes.BTN_X, ecodes.BTN_Y]) & set(capabilities[ecodes.EV_KEY])
+                        ):
+                            return device.path, name, addr
+    return None, None, None
 
 class MyController:
     """A custom controller class to handle generic input events and map them to relays."""
 
-    def __init__(self, device_path=None, **kwargs):
+    def __init__(self, device_path=None, device_name=None, device_mac=None, **kwargs):
         self.keymap = {}
         self.button_states = {}
         self.relay_to_buttons = {} # This will now store evdev integer codes
         self.relay_hardware_states = {1: 0, 2: 0, 3: 0, 4: 0}
         self.is_connected = False
-        self.device_name = None
-        self.device_mac = None
+        self.device_name = device_name
+        self.device_mac = device_mac
         self.device_path = device_path
         self.device = None
 
@@ -43,7 +50,8 @@ class MyController:
                 self.device = InputDevice(self.device_path)
                 self.is_connected = True
                 print(f"Successfully opened input device: {self.device.name} ({self.device.path})")
-                self.device_name = self.device.name
+                if not self.device_name:
+                    self.device_name = self.device.name
             except (FileNotFoundError, PermissionError) as e:
                 print(f"Warning: Could not open device {self.device_path}: {e}")
                 self.is_connected = False
@@ -52,44 +60,22 @@ class MyController:
         """Returns the current status of the controller."""
         controller_info = "Not found"
         if self.is_connected and self.device:
-            controller_info = f"{self.device.name} ({self.device.path})"
+            controller_info = f"{self.device_name} ({self.device.path})"
             if self.device_mac:
                 controller_info += f" [{self.device_mac}]"
+        
+        capabilities = self.get_evdev_capabilities()
+
         return {
-            'controller_name': controller_info
+            'controller_name': controller_info,
+            'evdev_capabilities': capabilities
         }
 
-    def update_controller_info(self):
-        """Updates controller name from /proc/bus/input/devices."""
-        if not self.device:
-            return
-        print("Attempting to update controller info...")
-        try:
-            with open("/proc/bus/input/devices", "r") as f:
-                content = f.read()
-            
-            print(f"Read {len(content)} bytes from /proc/bus/input/devices.")
-            device_blocks = content.strip().split("\n\n")
-            print(f"Found {len(device_blocks)} device blocks.")
-
-            for block in device_blocks:
-                if self.device.path in block:
-                    print(f"Found block for device path: {self.device.path}")
-                    name_match = re.search(r'N: Name="([^"]+)"', block)
-                    if name_match:
-                        self.device_name = name_match.group(1)
-                        print(f"Successfully updated controller name to: {self.device_name}")
-                        return
-            
-            print(f"Could not find a matching name for {self.device.path} in /proc/bus/input/devices.")
-            self.device_name = self.device.name
-        except FileNotFoundError:
-            print("Error: /proc/bus/input/devices not found.")
-        except Exception as e:
-            print(f"An unexpected error occurred while updating controller info: {e}")
-        
-        self.device_name = self.device.name
-
+    def get_evdev_capabilities(self, verbose=True):
+        """Returns the evdev capabilities of the controller."""
+        if self.device:
+            return self.device.capabilities(verbose=verbose)
+        return None
 
     def setup(self, config):
         """Loads configuration and initializes hardware."""
@@ -172,7 +158,8 @@ class MyController:
         """Listens for input events and handles device disconnection."""
         while True:
             if not self.device_path:
-                self.device_path = find_controller_device()
+                name_pattern = self.get_name_pattern()
+                self.device_path, self.device_name, self.device_mac = find_controller_device(name_pattern)
                 if not self.device_path:
                     time.sleep(10)
                     continue
@@ -181,8 +168,7 @@ class MyController:
             try:
                 self.device = InputDevice(self.device_path)
                 self.is_connected = True
-                print(f"Successfully connected to {self.device.name}. Listening for events...")
-                self.update_controller_info()
+                print(f"Successfully connected to {self.device_name}. Listening for events...")
 
                 for event in self.device.read_loop():
                     if event.code in self.button_states:
@@ -229,3 +215,8 @@ class MyController:
         if self.device:
             self.device.close()
             print("Input device closed.")
+
+    def get_name_pattern(self):
+        with open("config.json", "r") as f:
+            config = json.load(f)
+        return config.get("device_name_pattern")

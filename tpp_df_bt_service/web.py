@@ -2,6 +2,7 @@ import http.server
 import socketserver
 import threading
 import importlib.metadata
+from evdev import ecodes
 
 import subprocess
 import socket # Import socket
@@ -29,6 +30,21 @@ class VersionHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
             self.end_headers()
             
             status = self.controller.get_status()
+            capabilities_html = ""
+            if status['evdev_capabilities']:
+                capabilities_html += "<h2>evdev Capabilities</h2><ul>"
+                for event_type, codes in status['evdev_capabilities'].items():
+                    capabilities_html += f"<li><b>{event_type[0]}</b>:<ul>"
+                    for code in codes:
+                        if isinstance(code[0], int) and event_type[0] == 'EV_KEY':
+                            try:
+                                capabilities_html += f"<li>{ecodes.KEY[code[0]]}</li>"
+                            except KeyError:
+                                capabilities_html += f"<li>{code}</li>"
+                        else:
+                            capabilities_html += f"<li>{code}</li>"
+                    capabilities_html += "</ul></li>"
+                capabilities_html += "</ul>"
 
             html = f"""
             <html>
@@ -37,6 +53,7 @@ class VersionHttpRequestHandler(http.server.SimpleHTTPRequestHandler):
             <h1>TPP-DF-BT Service</h1>
             <p>Version: {__version__}</p>
             <p>Controller: {status['controller_name']}</p>
+            {capabilities_html}
             </body>
             </html>
             """
