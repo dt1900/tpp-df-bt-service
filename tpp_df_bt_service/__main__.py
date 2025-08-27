@@ -8,7 +8,6 @@ Sequent Microsystems 4-Relay HAT based on a JSON keymap.
 
 import signal
 import sys
-import json
 import threading
 import time
 from .service import MyController
@@ -28,28 +27,17 @@ if __name__ == "__main__":
 
     print("Starting generic controller relay service...")
     
+    # Initialize the controller
+    controller = MyController()
+    
+    # Start the controller listener in a separate thread
+    controller_thread = threading.Thread(target=controller.listen)
+    controller_thread.daemon = True
+    controller_thread.start()
+
+    # Start the web server in a background thread
+    start_web_server(controller, 8000)
+
+    # Keep the main thread alive
     while True:
-        try:
-            with open("config.json", "r") as f:
-                config = json.load(f)
-            
-            # Initialize the controller
-            controller = MyController()
-            controller.setup(config)
-            
-            # Start the controller listener in a separate thread
-            controller_thread = threading.Thread(target=controller.listen)
-            controller_thread.daemon = True
-            controller_thread.start()
-
-            # Start the web server in a background thread
-            start_web_server(controller, 8000)
-
-            # Keep the main thread alive
-            while True:
-                time.sleep(1)
-
-        except Exception as e:
-            print(f"\nAn error occurred in the main loop: {e}")
-            print("Restarting in 10 seconds...")
-            time.sleep(10)
+        time.sleep(1)

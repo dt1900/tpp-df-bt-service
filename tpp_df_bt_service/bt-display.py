@@ -3,32 +3,35 @@ from evdev import InputDevice, list_devices, ecodes
 import re
 import json
 
-def get_name_pattern():
+def get_allowed_devices():
     with open("config.json", "r") as f:
         config = json.load(f)
-    return config.get("device_name_pattern")
+    return config.get("allowed_devices", [])
 
-def find_controller_device(name_pattern):
+def find_controller_device(allowed_devices):
     """Scans for a suitable controller device using pydbus and evdev."""
     bus = pydbus.SystemBus()
     mngr = bus.get('org.bluez', '/')
     mngd_objs = mngr.GetManagedObjects()
 
-    for path in mngd_objs:
-        con_state = mngd_objs[path].get('org.bluez.Device1', {}).get('Connected', False)
-        if con_state:
-            name = mngd_objs[path].get('org.bluez.Device1', {}).get('Name')
-            addr = mngd_objs[path].get('org.bluez.Device1', {}).get('Address')
+    for device_config in allowed_devices:
+        name_pattern = device_config.get("device_name_pattern")
+        if not name_pattern:
+            continue
 
-            if re.search(name_pattern, name, re.IGNORECASE):
-                devices = [InputDevice(path) for path in list_devices()]
-                for device in devices:
-                    if name.lower() in device.name.lower():
-                        capabilities = device.capabilities(verbose=False)
-                        if ecodes.EV_KEY in capabilities and (
-                            set([ecodes.BTN_GAMEPAD, ecodes.BTN_SOUTH, ecodes.BTN_A, ecodes.BTN_B, ecodes.BTN_X, ecodes.BTN_Y]) & set(capabilities[ecodes.EV_KEY])
-                        ):
-                            return device.path, name, addr
+        for path in mngd_objs:
+            con_state = mngd_objs[path].get('org.bluez.Device1', {}).get('Connected', False)
+            if con_state:
+                name = mngd_objs[path].get('org.bluez.Device1', {}).get('Name')
+                addr = mngd_objs[path].get('org.bluez.Device1', {}).get('Address')
+
+                if re.search(name_pattern, name, re.IGNORECASE):
+                    devices = [InputDevice(path) for path in list_devices()]
+                    for device in devices:
+                        if name.lower() in device.name.lower():
+                            capabilities = device.capabilities(verbose=False)
+                            if ecodes.EV_KEY in capabilities:
+                                return device.path, name, addr
     return None, None, None
 
 def get_connected_devices():
@@ -58,8 +61,8 @@ def main():
     """
     Main function to display connected Bluetooth devices and their evdev ecodes.
     """
-    name_pattern = get_name_pattern()
-    controller_path, _, _ = find_controller_device(name_pattern)
+    allowed_devices = get_allowed_devices()
+    controller_path, _, _ = find_controller_device(allowed_devices)
 
     print("Searching for connected Bluetooth devices...")
     connected_bluetooth_devices = get_connected_devices()

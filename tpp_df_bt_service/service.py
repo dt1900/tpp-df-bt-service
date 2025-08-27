@@ -8,28 +8,56 @@ import traceback
 import pydbus
 from evdev import InputDevice, list_devices, ecodes
 
-def find_controller_device(name_pattern):
+def find_controller_device(allowed_devices):
     """Scans for a suitable controller device using pydbus and evdev."""
     bus = pydbus.SystemBus()
     mngr = bus.get('org.bluez', '/')
     mngd_objs = mngr.GetManagedObjects()
 
-    for path in mngd_objs:
-        con_state = mngd_objs[path].get('org.bluez.Device1', {}).get('Connected', False)
-        if con_state:
-            name = mngd_objs[path].get('org.bluez.Device1', {}).get('Name')
-            addr = mngd_objs[path].get('org.bluez.Device1', {}).get('Address')
+    for device_config in allowed_devices:
+        name_pattern = device_config.get("device_name_pattern")
+        keymap = device_config.get("keymap")
+        if not name_pattern or not keymap:
+            continue
 
-            if re.search(name_pattern, name, re.IGNORECASE):
-                devices = [InputDevice(path) for path in list_devices()]
-                for device in devices:
-                    if name.lower() in device.name.lower():
-                        capabilities = device.capabilities(verbose=False)
-                        if ecodes.EV_KEY in capabilities and (
-                            set([ecodes.BTN_GAMEPAD, ecodes.BTN_SOUTH, ecodes.BTN_A, ecodes.BTN_B, ecodes.BTN_X, ecodes.BTN_Y]) & set(capabilities[ecodes.EV_KEY])
-                        ):
-                            return device.path, name, addr
-    return None, None, None
+        # Get all button names from the keymap
+        all_button_names = set()
+        for relay_key, button_names in keymap.items():
+            for name in button_names:
+                if not name.startswith("DPAD_"):
+                    all_button_names.add(name.upper())
+
+        # Convert button names to evdev codes
+        expected_codes = set()
+        for name in all_button_names:
+            try:
+                code = getattr(ecodes, name)
+                expected_codes.add(code)
+            except AttributeError:
+                # This name is in the config but not a valid evdev code.
+                # We can ignore it here; the main class logs a warning for this.
+                pass
+
+        if not expected_codes:
+            continue # No valid keys to check for this device
+
+        for path in mngd_objs:
+            con_state = mngd_objs[path].get('org.bluez.Device1', {}).get('Connected', False)
+            if con_state:
+                name = mngd_objs[path].get('org.bluez.Device1', {}).get('Name')
+                addr = mngd_objs[path].get('org.bluez.Device1', {}).get('Address')
+
+                if re.search(name_pattern, name, re.IGNORECASE):
+                    devices = [InputDevice(path) for path in list_devices()]
+                    for device in devices:
+                        if name.lower() in device.name.lower():
+                            capabilities = device.capabilities(verbose=False)
+                            if ecodes.EV_KEY in capabilities:
+                                supported_codes = set(capabilities[ecodes.EV_KEY])
+                                # Check if any of the expected keys are supported by this device
+                                if not expected_codes.isdisjoint(supported_codes):
+                                    return device.path, name, addr, keymap
+    return None, None, None, None
 
 class MyController:
     """A custom controller class to handle generic input events and map them to relays."""
@@ -78,17 +106,19 @@ class MyController:
             return self.device.capabilities(verbose=verbose)
         return None
 
-    def setup(self, config):
+    def setup(self, keymap):
         """Loads configuration and initializes hardware."""
         print("Setting up controller and relays...")
-        self._load_config(config)
+        print(f"Keymap received in setup: {keymap}")
+        self._load_config(keymap)
         self._initialize_button_states()
         self._initialize_relays()
         print("Setup complete. Listening for controller input...")
 
-    def _load_config(self, config):
-        """Loads the configuration from config.json."""
-        keymap = config.get("keymap", {})
+    def _load_config(self, keymap):
+        """Loads the configuration from the provided keymap."""
+        print(f"Keymap in _load_config: {keymap}")
+        print(f"Type of keymap in _load_config: {type(keymap)}")
         if not keymap:
             print("Error: 'keymap' not found or is empty in config.json.")
             sys.exit(1)
@@ -153,6 +183,7 @@ class MyController:
         A relay is ON if any of its mapped buttons are pressed.
         A relay is OFF only when all of its mapped buttons are released.
         """
+        print("Updating relays...")
         for relay_num, codes in self.relay_to_buttons.items():
             # Check if any button assigned to this relay is currently pressed
             is_any_button_pressed = any(self.button_states.get(c, False) for c in codes)
@@ -160,9 +191,11 @@ class MyController:
             current_hw_state = self.relay_hardware_states[relay_num]
             
             if is_any_button_pressed and current_hw_state == 0:
+                print(f"Turning relay {relay_num} ON")
                 lib4relay.set(0, relay_num, 1)
                 self.relay_hardware_states[relay_num] = 1
             elif not is_any_button_pressed and current_hw_state == 1:
+                print(f"Turning relay {relay_num} OFF")
                 lib4relay.set(0, relay_num, 0)
                 self.relay_hardware_states[relay_num] = 0
 
@@ -170,11 +203,13 @@ class MyController:
         """Listens for input events and handles device disconnection."""
         while True:
             if not self.device_path:
-                name_pattern = self.get_name_pattern()
-                self.device_path, self.device_name, self.device_mac = find_controller_device(name_pattern)
+                allowed_devices = self.get_allowed_devices()
+                self.device_path, self.device_name, self.device_mac, keymap = find_controller_device(allowed_devices)
                 if not self.device_path:
                     time.sleep(10)
                     continue
+                self.setup(keymap)
+
 
             print(f"Connecting to device: {self.device_path}...")
             try:
@@ -217,6 +252,7 @@ class MyController:
 
     def _handle_button_event(self, event_code, pressed):
         """A generic handler for all button events."""
+        print(f"Button event: code={event_code}, pressed={pressed}")
         # event_code is now the evdev integer code
         if event_code in self.button_states:
             self.button_states[event_code] = pressed
@@ -240,7 +276,21 @@ class MyController:
             self.device.close()
             print("Input device closed.")
 
-    def get_name_pattern(self):
-        with open("config.json", "r") as f:
+    def get_allowed_devices(self):
+        with open("/etc/tpp-df-bt-service/config.json", "r") as f:
             config = json.load(f)
-        return config.get("device_name_pattern")
+        return config.get("allowed_devices", [])
+
+def main():
+    """Main function to run the controller service."""
+    # Initialize and run the controller
+    controller = MyController()
+    try:
+        controller.listen()
+    except KeyboardInterrupt:
+        print("\nExiting...")
+    finally:
+        controller.cleanup()
+
+if __name__ == "__main__":
+    main()
