@@ -1,9 +1,24 @@
 {
-  "device_name_pattern": "^Wireless Controller$",
-  "keymap": {
-    "relay_1": [],
-    "relay_2": ["BTN_TL", "BTN_TL2"],
-    "relay_3": ["BTN_START", "BTN_SOUTH", "DPAD_DOWN"],
-    "relay_4": ["BTN_TR", "BTN_TR2", "DPAD_RIGHT"]
-  }
+  "version": "1.1.0",
+  "allowed_devices": [
+    {
+      "device_name_pattern": "^Wireless Controller$",
+      "controller": "wireless_controller.WirelessController",
+      "keymap": {
+        "relay_1": [],
+        "relay_2": ["BTN_TL", "BTN_TL2"],
+        "relay_3": ["BTN_START", "BTN_SOUTH", "DPAD_DOWN"],
+        "relay_4": ["BTN_TR", "BTN_TR2", "DPAD_RIGHT"]
+      }
+    },
+    {
+      "device_name_pattern": "^JX-05(?!.*Consumer Control)",
+      "controller": "jx05_controller.JX05Controller",
+      "swipe_map": {
+        "relay_2": ["DOWN", "LEFT"],
+        "relay_4": ["UP", "RIGHT"],
+        "relay_3": ["TAP"]
+      }
+    }
+  ]
 }

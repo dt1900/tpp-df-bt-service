@@ -1,5 +1,37 @@
 #!/bin/sh
 set -e
+
+CONFIG_FILE="/etc/tpp-df-bt-service/config.json"
+NEW_CONFIG_FILE_DPKG="/etc/tpp-df-bt-service/config.json.dpkg-new"
+PACKAGE_VERSION=$2
+
+# Function to extract version from config.json
+get_version_from_config() {
+    grep -o '"version": "[0-9.]*"' "$1" | cut -d'"' -f4
+}
+
+if [ "$1" = "configure" ]; then
+    if [ -f "$NEW_CONFIG_FILE_DPKG" ]; then
+        INSTALLED_VERSION=$(get_version_from_config "$CONFIG_FILE" || echo "0.0.0")
+        NEW_VERSION_FROM_PACKAGE=$(get_version_from_config "$NEW_CONFIG_FILE_DPKG" || echo "0.0.0")
+
+        if [ -z "$INSTALLED_VERSION" ]; then
+            INSTALLED_VERSION="0.0.0"
+        fi
+        if [ -z "$NEW_VERSION_FROM_PACKAGE" ]; then
+            NEW_VERSION_FROM_PACKAGE="0.0.0"
+        fi
+
+        if dpkg --compare-versions "$NEW_VERSION_FROM_PACKAGE" gt "$INSTALLED_VERSION"; then
+            echo "Updating config.json to version $NEW_VERSION_FROM_PACKAGE"
+            mv "$NEW_CONFIG_FILE_DPKG" "$CONFIG_FILE"
+        else
+            echo "Preserving user-modified config.json."
+            rm "$NEW_CONFIG_FILE_DPKG"
+        fi
+    fi
+fi
+
 echo "Reloading systemd and starting service..."
 systemctl daemon-reload
 systemctl enable tpp-df-bt.service

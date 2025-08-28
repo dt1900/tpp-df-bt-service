@@ -44,14 +44,16 @@ echo "New version available. Downloading and installing..."
 TMP_DEB=$(mktemp)
 wget -O "$TMP_DEB" "$DEB_URL"
 
-# Stop the service
-sudo systemctl stop tpp-df-bt.service
+# Purge the old package completely
+# Use || true to prevent the script from failing if the package isn't installed
+sudo apt-get purge -y $PACKAGE_NAME || true
 
-# Install the new package
-sudo dpkg -i "$TMP_DEB"
+# Explicitly remove leftover directories
+echo "Removing leftover directories to ensure a clean install..."
+sudo rm -rf /usr/lib/python3/dist-packages/tpp_df_bt_service
 
-# Start the service
-sudo systemctl start tpp-df-bt.service
+# Install the new package using apt-get to handle dependencies
+sudo apt-get install -y "$TMP_DEB"
 
 # Clean up
 rm "$TMP_DEB"
