@@ -53,7 +53,8 @@ echo "Removing leftover directories to ensure a clean install..."
 sudo rm -rf /usr/lib/python3/dist-packages/tpp_df_bt_service
 
 # Install the new package using apt-get to handle dependencies
-sudo apt-get install -y "$TMP_DEB"
+sudo dpkg -i "$TMP_DEB"
+sudo apt install -f
 
 # Clean up
 rm "$TMP_DEB"

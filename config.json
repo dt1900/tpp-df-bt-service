@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.1.2",
   "allowed_devices": [
     {
       "device_name_pattern": "^Wireless Controller$",
