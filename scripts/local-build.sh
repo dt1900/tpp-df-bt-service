@@ -10,7 +10,7 @@ echo "Cleaning up previous builds..."
 rm -f tpp-df-bt-service_*.deb
 rm -rf tpp-df-bt-service-*
 
-# 2. Increment the patch version
+# 2. Increment the patch version and update files
 CURRENT_VERSION=$(grep "Version:" debian/control | awk '{print $2}')
 MAJOR=$(echo $CURRENT_VERSION | cut -d. -f1)
 MINOR=$(echo $CURRENT_VERSION | cut -d. -f2)
@@ -18,16 +18,7 @@ PATCH=$(echo $CURRENT_VERSION | cut -d. -f3)
 NEW_PATCH=$((PATCH + 1))
 NEW_VERSION="${MAJOR}.${MINOR}.${NEW_PATCH}"
 
-echo "Incrementing version from ${CURRENT_VERSION} to ${NEW_VERSION}"
-
-# Update debian/control
-sed -i "s/Version: ${CURRENT_VERSION}/Version: ${NEW_VERSION}/g" debian/control
-
-# Update README.md
-sed -i "s/${CURRENT_VERSION}/${NEW_VERSION}/g" README.md
-
-# Update config.json
-sed -i "s/"version": "${CURRENT_VERSION}"/"version": "${NEW_VERSION}"/g" config.json
+./scripts/update-version.sh ${NEW_VERSION}
 
 # 3. Build the service
 echo "Building the service..."

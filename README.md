@@ -19,7 +19,7 @@ The service now supports multiple controller types. The `allowed_devices` proper
 Example [`config.json`](config.json):
 ```json
 {
-  "version": "1.1.0",
+  "version": "1.1.2",
   "allowed_devices": [
     {
       "device_name_pattern": "^Wireless Controller$",
@@ -77,7 +77,7 @@ sudo python3 /usr/lib/python3/dist-packages/tpp_df_bt_service/bt-display.py
 
 ## Update Script
 
-The [`update-tpp-df-bt-service.sh`](update-tpp-df-bt-service.sh) script, located in `/usr/local/bin`, checks for new releases of the service on GitHub and automatically downloads and installs them. This script is run daily via a cron job located at [`/etc/cron.d/tpp-df-bt-service-update`](debian/tpp-df-bt-service-update).
+The [`update-tpp-df-bt-service.sh`](scripts/update-tpp-df-bt-service.sh) script, located in `/usr/local/bin`, checks for new releases of the service on GitHub and automatically downloads and installs them. This script is run daily via a cron job located at [`/etc/cron.d/tpp-df-bt-service-update`](debian/tpp-df-bt-service-update).
 
 To run the update script manually:
 
@@ -97,11 +97,11 @@ The project includes Debian files to create a `.deb` package for easy installati
 
 ### Using `local-build.sh`
 
-The [`local-build.sh`](local-build.sh) script automates the build and installation process. It automatically increments the patch version number in [`debian/control`](debian/control), [`README.md`](README.md), and [`config.json`](config.json), then builds and installs the new package.
+The [`local-build.sh`](scripts/local-build.sh) script automates the build and installation process. It automatically increments the patch version number in [`debian/control`](debian/control), [`README.md`](README.md), and [`config.json`](config.json), then builds and installs the new package.
 
 To use it, simply run the script:
 ```bash
-./local-build.sh
+./scripts/local-build.sh
 ```
 
 ### Using `build.sh`
@@ -111,10 +111,10 @@ The [`build.sh`](build.sh) script creates a `.deb` package for the service.
 To build the package, run the script with a version number:
 
 ```bash
-./build.sh 1.1.0
+bash build.sh 1.1.2
 ```
 
-This will create a file named `tpp-df-bt-service_1.1.0-1_all.deb`.
+This will create a file named `tpp-df-bt-service_1.1.2-1_all.deb`.
 
 ## Installation
 
@@ -126,7 +126,7 @@ To install the service from a `.deb` package, you can either download it manuall
 2.  Install the package using `apt`:
 
     ```bash
-    sudo apt install ./tpp-df-bt-service_1.1.0-1_all.deb
+    sudo apt install ./tpp-df-bt-service_1.1.2-1_all.deb
     ```
 
 ### Direct Installation from GitHub
@@ -134,7 +134,7 @@ To install the service from a `.deb` package, you can either download it manuall
 You can also install the package directly from the GitHub URL.
 
 ```bash
-curl -L https://github.com/dt1900/tpp-df-bt-service/releases/download/1.1.0/tpp-df-bt-service_1.1.0-1_all.deb -o /tmp/tpp-df-bt-service_1.1.0-1_all.deb && sudo apt install /tmp/tpp-df-bt-service_1.1.0-1_all.deb
+curl -L https://github.com/dt1900/tpp-df-bt-service/releases/download/1.1.2/tpp-df-bt-service_1.1.2-1_all.deb -o /tmp/tpp-df-bt-service_1.1.2-1_all.deb && sudo apt install /tmp/tpp-df-bt-service_1.1.2-1_all.deb
 ```
 
 ## Service Management
