@@ -50,7 +50,6 @@ sudo apt-get purge -y $PACKAGE_NAME || true
 
 # Explicitly remove leftover directories
 echo "Removing leftover directories to ensure a clean install..."
-sudo rm -rf /etc/tpp-df-bt-service
 sudo rm -rf /usr/lib/python3/dist-packages/tpp_df_bt_service
 
 # Install the new package using apt-get to handle dependencies

@@ -26,6 +26,9 @@ sed -i "s/Version: ${CURRENT_VERSION}/Version: ${NEW_VERSION}/g" debian/control
 # Update README.md
 sed -i "s/${CURRENT_VERSION}/${NEW_VERSION}/g" README.md
 
+# Update config.json
+sed -i "s/"version": "${CURRENT_VERSION}"/"version": "${NEW_VERSION}"/g" config.json
+
 # 3. Build the service
 echo "Building the service..."
 ./build.sh ${NEW_VERSION}
@@ -38,7 +41,6 @@ echo "Purging existing service..."
 sudo apt-get purge -y tpp-df-bt-service || true # Use || true to prevent script from exiting if package is not installed
 
 echo "Removing leftover directories to ensure a clean install..."
-sudo rm -rf /etc/tpp-df-bt-service
 sudo rm -rf /usr/lib/python3/dist-packages/tpp_df_bt_service
 
 echo "Clearing journald logs..."
